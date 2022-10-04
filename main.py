@@ -1,9 +1,9 @@
 from typing import Dict, List
+import tensorflow as tf
 
 import preprocessing
 from models.mobile_net_v2 import MobileNetV2
-
-import tensorflow as tf
+from models.vgg16 import VGG16
 
 
 def training(
@@ -33,6 +33,15 @@ def training(
     ).history
 
 
+def evaluation(
+        model: tf.keras.Model,
+        test_images: tf.keras.preprocessing.image.Iterator
+) -> None:
+    results = model.evaluate(test_images, verbose=0)
+    print(f'Test Loss: {results[0]}')
+    print(f'Test Accuracy: {results[1] * 100}')
+
+
 if __name__ == '__main__':
     dataset = preprocessing.merge_datasets(['asl_alphabet_train'])
     split = preprocessing.default_train_test_split(dataset, train_size=0.8, stratify=dataset['label'])
@@ -47,7 +56,7 @@ if __name__ == '__main__':
         split['train'],
         split['test']
     )
-    history = training(
+    _ = training(
         model=mobile_net.model,
         optimizer=adam,
         train_images=mobile_net_data['train_images'],
@@ -55,6 +64,30 @@ if __name__ == '__main__':
     )
 
     # MobileNetV2 Evaluation
-    results = mobile_net.model.evaluate(mobile_net_data['test_images'], verbose=0)
-    print(f'Test Loss: {results[0]}')
-    print(f'Test Accuracy: {results[1] * 100}')
+    evaluation(
+        mobile_net.model,
+        mobile_net_data['test_images']
+    )
+
+    # VGG16 Training #
+    vgg16 = VGG16()
+    adam = tf.keras.optimizers.Adam(
+        learning_rate=0.0001,
+        name='Adam'
+    )
+    vgg16_data = vgg16.data_generator(
+        split['train'],
+        split['test']
+    )
+    _ = training(
+        model=vgg16.model,
+        optimizer=adam,
+        train_images=vgg16_data['train_images'],
+        val_images=vgg16_data['val_images']
+    )
+
+    # VGG16 Evaluation
+    evaluation(
+        vgg16.model,
+        vgg16_data['test_images']
+    )
