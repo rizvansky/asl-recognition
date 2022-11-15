@@ -44,18 +44,32 @@ class VGG16:
 
     def data_generator(
             self,
-            train: pd.DataFrame,
-            test: pd.DataFrame,
-            validation_split: int = 0.2
+            splits: Dict[str, pd.DataFrame],
+            validation_split: int | None = 0.2
     ) -> Dict[str, tf.keras.preprocessing.image.Iterator]:
+        test_generator = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1 / 255.0)
+        test_images = test_generator.flow_from_dataframe(
+            dataframe=splits['test'],
+            x_col=self.image_path_col_name,
+            y_col=self.label_col_name,
+            target_size=self.input_shape[:2:],
+            class_mode='categorical',
+            batch_size=self.batch_size,
+            shuffle=False,
+            subset='validation'
+        )
+        if 'train' not in splits:
+            return {
+                'test_images': test_images
+            }
+
         train_generator = tf.keras.preprocessing.image.ImageDataGenerator(
             rescale=1/255.0,
             validation_split=validation_split
         )
-        test_generator = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1/255.0)
 
         train_images = train_generator.flow_from_dataframe(
-            dataframe=train,
+            dataframe=splits['train'],
             x_col=self.image_path_col_name,
             y_col=self.label_col_name,
             target_size=self.input_shape[:2:],
@@ -66,24 +80,13 @@ class VGG16:
         )
 
         val_images = train_generator.flow_from_dataframe(
-            dataframe=train,
+            dataframe=splits['train'],
             x_col=self.image_path_col_name,
             y_col=self.label_col_name,
             target_size=self.input_shape[:2:],
             class_mode='categorical',
             batch_size=self.batch_size,
             shuffle=True,
-            subset='validation'
-        )
-
-        test_images = test_generator.flow_from_dataframe(
-            dataframe=test,
-            x_col=self.image_path_col_name,
-            y_col=self.label_col_name,
-            target_size=self.input_shape[:2:],
-            class_mode='categorical',
-            batch_size=self.batch_size,
-            shuffle=False,
             subset='validation'
         )
 

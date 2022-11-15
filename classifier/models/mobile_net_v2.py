@@ -40,20 +40,33 @@ class MobileNetV2:
 
     def data_generator(
             self,
-            train: pd.DataFrame,
-            test: pd.DataFrame,
+            splits: Dict[str, pd.DataFrame],
             validation_split: int = 0.2
     ) -> Dict[str, tf.keras.preprocessing.image.Iterator]:
+        test_generator = tf.keras.preprocessing.image.ImageDataGenerator(
+            preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input
+        )
+        test_images = test_generator.flow_from_dataframe(
+            dataframe=splits['test'],
+            x_col=self.image_path_col_name,
+            y_col=self.label_col_name,
+            target_size=self.input_shape[:2:],
+            color_mode='rgb',
+            class_mode='categorical',
+            batch_size=self.batch_size,
+            shuffle=False
+        )
+        if 'train' not in splits:
+            return {
+                'test_images': test_images
+            }
         train_generator = tf.keras.preprocessing.image.ImageDataGenerator(
             preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input,
             validation_split=validation_split
         )
-        test_generator = tf.keras.preprocessing.image.ImageDataGenerator(
-            preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input
-        )
 
         train_images = train_generator.flow_from_dataframe(
-            dataframe=train,
+            dataframe=splits['train'],
             x_col=self.image_path_col_name,
             y_col=self.label_col_name,
             target_size=self.input_shape[:2:],
@@ -65,7 +78,7 @@ class MobileNetV2:
         )
 
         val_images = train_generator.flow_from_dataframe(
-            dataframe=train,
+            dataframe=splits['train'],
             x_col=self.image_path_col_name,
             y_col=self.label_col_name,
             target_size=self.input_shape[:2:],
@@ -74,17 +87,6 @@ class MobileNetV2:
             batch_size=self.batch_size,
             shuffle=True,
             subset='validation'
-        )
-
-        test_images = test_generator.flow_from_dataframe(
-            dataframe=test,
-            x_col=self.image_path_col_name,
-            y_col=self.label_col_name,
-            target_size=self.input_shape[:2:],
-            color_mode='rgb',
-            class_mode='categorical',
-            batch_size=self.batch_size,
-            shuffle=False
         )
 
         return {

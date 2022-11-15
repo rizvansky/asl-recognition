@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Any
 import tensorflow as tf
 
 import preprocessing
@@ -12,8 +12,9 @@ def training(
         train_images: tf.keras.preprocessing.image.Iterator,
         val_images: tf.keras.preprocessing.image.Iterator,
         epochs: int = 10,
-        loss: str = 'categorical_crossentropy'
-) -> Dict[str, List[float]]:
+        loss: str = 'categorical_crossentropy',
+        save_checkpoint_path: str = 'checkpoint.ckpt'
+) -> None:
     model.compile(
         optimizer=optimizer,
         loss=loss,
@@ -28,18 +29,24 @@ def training(
                 monitor='val_loss',
                 patience=2,
                 restore_best_weights=True
+            ),
+            tf.keras.callbacks.ModelCheckpoint(
+                filepath=save_checkpoint_path,
+                save_weights_only=True,
+                verbose=1
             )
         ]
-    ).history
+    )
 
 
 def evaluation(
         model: tf.keras.Model,
         test_images: tf.keras.preprocessing.image.Iterator
-) -> None:
+) -> Any:
     results = model.evaluate(test_images, verbose=0)
     print(f'Test Loss: {results[0]}')
     print(f'Test Accuracy: {results[1] * 100}')
+    return results
 
 
 if __name__ == '__main__':
