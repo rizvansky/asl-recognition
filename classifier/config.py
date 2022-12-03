@@ -6,7 +6,7 @@ training_configuration = {
         learning_rate=0.001,
         name='Adam'
     ),
-    'epochs': 10,
+    'epochs': 1,
     'loss': 'categorical_crossentropy',
     'save_checkpoint_path': 'checkpoint.ckpt',
 }

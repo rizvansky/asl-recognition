@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Union
 
 import pandas as pd
 import tensorflow as tf
@@ -19,6 +19,7 @@ class VGG16:
         self.label_col_name = label_col_name
         self.batch_size = batch_size
         self.num_classes = num_classes
+        self.mapping = {}
         self.init_model()
 
     def init_model(self) -> None:
@@ -45,9 +46,11 @@ class VGG16:
     def data_generator(
             self,
             splits: Dict[str, pd.DataFrame],
-            validation_split: int | None = 0.2
+            validation_split: Union[int, None] = 0.2
     ) -> Dict[str, tf.keras.preprocessing.image.Iterator]:
-        test_generator = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1 / 255.0)
+        test_generator = tf.keras.preprocessing.image.ImageDataGenerator(
+            rescale=1 / 255.0,
+        )
         test_images = test_generator.flow_from_dataframe(
             dataframe=splits['test'],
             x_col=self.image_path_col_name,
@@ -56,8 +59,8 @@ class VGG16:
             class_mode='categorical',
             batch_size=self.batch_size,
             shuffle=False,
-            subset='validation'
         )
+        self.mapping = test_images.class_indices
         if 'train' not in splits:
             return {
                 'test_images': test_images

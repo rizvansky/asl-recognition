@@ -11,7 +11,7 @@ class MobileNetV2:
             image_path_col_name='image_path',
             label_col_name='label',
             batch_size=32,
-            num_classes = 29
+            num_classes=29
     ):
         self.model = None
         self.input_shape = input_shape

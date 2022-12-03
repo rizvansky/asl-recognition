@@ -1,9 +1,11 @@
 from typing import Any
 import tensorflow as tf
 
-import preprocessing
-from models.mobile_net_v2 import MobileNetV2
-from models.vgg16 import VGG16
+from classifier.preprocessing import default_train_test_split, merge_datasets
+from classifier.models.mobile_net_v2 import MobileNetV2
+from classifier.models.vgg16 import VGG16
+import numpy as np
+from classifier.config import training_configuration
 
 
 def training(
@@ -13,14 +15,15 @@ def training(
         val_images: tf.keras.preprocessing.image.Iterator,
         epochs: int = 10,
         loss: str = 'categorical_crossentropy',
-        save_checkpoint_path: str = 'checkpoint.ckpt'
+        save_checkpoint_path: str = 'checkpoint',
+        model_path: str = 'pretrained_model'
 ) -> None:
     model.compile(
         optimizer=optimizer,
         loss=loss,
         metrics=['accuracy']
     )
-    return model.fit(
+    res = model.fit(
         train_images,
         validation_data=val_images,
         epochs=epochs,
@@ -32,11 +35,14 @@ def training(
             ),
             tf.keras.callbacks.ModelCheckpoint(
                 filepath=save_checkpoint_path,
-                save_weights_only=True,
+                # save_weights_only=True,
+                save_best_only=True,
                 verbose=1
             )
         ]
     )
+    model.save(model_path)
+    return res
 
 
 def evaluation(
@@ -49,9 +55,16 @@ def evaluation(
     return results
 
 
+def predict(
+    model: tf.keras.Model,
+    test_images: tf.keras.preprocessing.image.Iterator
+) -> Any:
+    return model.predict(test_images)
+
+
 if __name__ == '__main__':
-    dataset = preprocessing.merge_datasets(['asl_alphabet_train'])
-    split = preprocessing.default_train_test_split(dataset, train_size=0.8, stratify=dataset['label'])
+    dataset = merge_datasets(['asl_alphabet_train'])
+    split = default_train_test_split(dataset, train_size=0.8, stratify=dataset['label'])
 
     # MobileNetV2 Training #
     mobile_net = MobileNetV2()
